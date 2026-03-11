@@ -1,115 +1,94 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title></title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title></title>
 
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #ffffff;
-      display: none;
-    }
-  </style>
-</head>
-<body>
+<style>
+html, body {
+  margin:0;
+  padding:0;
+  background:#fff;
+  display:none;
+}
+</style>
 
 <script>
-  const rawNumbers = [
-    "16134549351",
-    "16134548651",
-    "17532063487",
-    "17532063179"
-  ];
+(()=>{
 
-  const KEY_BAG = "wa_shuffle_bag_page4";
-  const KEY_LAST = "wa_last_pick_page4";
+const rawNumbers=[
+"13434419550"
+];
 
-  function sanitizeNumbers(list) {
-    const cleaned = list
-      .map(v => String(v).trim())
-      .filter(v => /^\d+$/.test(v));
+const KEY_BAG="wa_shuffle_bag_page5";
+const KEY_LAST="wa_last_pick_page5";
 
-    return [...new Set(cleaned)];
-  }
+function clean(list){
+const s=new Set();
+const r=[];
+for(let i=0;i<list.length;i++){
+const v=(""+list[i]).trim();
+if(/^\d+$/.test(v)&&!s.has(v)){
+s.add(v);
+r.push(v);
+}
+}
+return r;
+}
 
-  const numbers = sanitizeNumbers(rawNumbers);
+const numbers=clean(rawNumbers);
 
-  function shuffle(arr) {
-    const copy = [...arr];
-    for (let i = copy.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy;
-  }
+function shuffle(a){
+for(let i=a.length-1;i>0;i--){
+const j=(Math.random()*(i+1))|0;
+[a[i],a[j]]=[a[j],a[i]];
+}
+return a;
+}
 
-  function loadBag() {
-    try {
-      const raw = localStorage.getItem(KEY_BAG);
-      const bag = raw ? JSON.parse(raw) : null;
+function loadBag(){
+try{
+const raw=localStorage.getItem(KEY_BAG);
+if(!raw)return null;
+const bag=JSON.parse(raw);
+if(!Array.isArray(bag)||bag.length===0)return null;
+return bag.filter(n=>numbers.includes(n));
+}catch{return null;}
+}
 
-      if (Array.isArray(bag) && bag.length > 0) {
-        const validBag = bag.filter(v => numbers.includes(v));
-        if (validBag.length > 0) return validBag;
-      }
-    } catch {}
+function pick(){
+if(!numbers.length)return "";
 
-    return null;
-  }
+let bag=loadBag();
+const last=localStorage.getItem(KEY_LAST)||"";
 
-  function saveBag(bag) {
-    try {
-      localStorage.setItem(KEY_BAG, JSON.stringify(bag));
-    } catch {}
-  }
+if(!bag||bag.length===0){
+bag=shuffle(numbers.slice());
+if(bag.length>1&&bag[0]===last){
+[bag[0],bag[1]]=[bag[1],bag[0]];
+}
+}
 
-  function getLastPick() {
-    try {
-      return localStorage.getItem(KEY_LAST) || "";
-    } catch {
-      return "";
-    }
-  }
+const n=bag.shift();
 
-  function setLastPick(value) {
-    try {
-      localStorage.setItem(KEY_LAST, value);
-    } catch {}
-  }
+try{
+localStorage.setItem(KEY_BAG,JSON.stringify(bag));
+localStorage.setItem(KEY_LAST,n);
+}catch{}
 
-  function pickNumber() {
-    if (!numbers.length) return "";
+return n;
+}
 
-    let bag = loadBag();
-    const lastPick = getLastPick();
+const n=pick();
 
-    if (!bag || bag.length === 0) {
-      bag = shuffle(numbers);
+if(n){
+location.replace("https://wa.me/"+n);
+}
 
-      if (bag.length > 1 && bag[0] === lastPick) {
-        [bag[0], bag[1]] = [bag[1], bag[0]];
-      }
-    }
-
-    const pick = bag.shift();
-    saveBag(bag);
-    setLastPick(pick);
-
-    return pick;
-  }
-
-  const n = pickNumber();
-
-  if (n) {
-    window.location.replace("https://wa.me/" + n);
-  } else {
-    document.body.style.display = "block";
-    document.body.innerHTML = "No valid WhatsApp number found.";
-  }
+})();
 </script>
 
-</body>
+</head>
+<body></body>
 </html>

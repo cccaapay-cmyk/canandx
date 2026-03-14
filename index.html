@@ -7,89 +7,115 @@
 
 <style>
 html, body {
-  margin:0;
-  padding:0;
-  background:#fff;
-  display:none;
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  display: none;
 }
 </style>
+</head>
+
+<body>
 
 <script>
-(()=>{
+(() => {
+  const rawNumbers = [
+    "13434429150",
+    "13434419303"
+  ];
 
-const rawNumbers=[
-"13434429150",
-"13434419303"
-];
+  const KEY_BAG = "wa_shuffle_bag_page5";
+  const KEY_LAST = "wa_last_pick_page5";
 
-const KEY_BAG="wa_shuffle_bag_page5";
-const KEY_LAST="wa_last_pick_page5";
+  function clean(list) {
+    const seen = new Set();
+    const result = [];
 
-function clean(list){
-const s=new Set();
-const r=[];
-for(let i=0;i<list.length;i++){
-const v=(""+list[i]).trim();
-if(/^\d+$/.test(v)&&!s.has(v)){
-s.add(v);
-r.push(v);
-}
-}
-return r;
-}
+    for (let i = 0; i < list.length; i++) {
+      const value = String(list[i]).trim();
+      if (/^\d+$/.test(value) && !seen.has(value)) {
+        seen.add(value);
+        result.push(value);
+      }
+    }
 
-const numbers=clean(rawNumbers);
+    return result;
+  }
 
-function shuffle(a){
-for(let i=a.length-1;i>0;i--){
-const j=(Math.random()*(i+1))|0;
-[a[i],a[j]]=[a[j],a[i]];
-}
-return a;
-}
+  const numbers = clean(rawNumbers);
 
-function loadBag(){
-try{
-const raw=localStorage.getItem(KEY_BAG);
-if(!raw)return null;
-const bag=JSON.parse(raw);
-if(!Array.isArray(bag)||bag.length===0)return null;
-return bag.filter(n=>numbers.includes(n));
-}catch{return null;}
-}
+  function shuffle(arr) {
+    const copy = arr.slice();
 
-function pick(){
-if(!numbers.length)return "";
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
 
-let bag=loadBag();
-const last=localStorage.getItem(KEY_LAST)||"";
+    return copy;
+  }
 
-if(!bag||bag.length===0){
-bag=shuffle(numbers.slice());
-if(bag.length>1&&bag[0]===last){
-[bag[0],bag[1]]=[bag[1],bag[0]];
-}
-}
+  function getStorageItem(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
 
-const n=bag.shift();
+  function setStorageItem(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch {}
+  }
 
-try{
-localStorage.setItem(KEY_BAG,JSON.stringify(bag));
-localStorage.setItem(KEY_LAST,n);
-}catch{}
+  function loadBag() {
+    try {
+      const raw = getStorageItem(KEY_BAG);
+      if (!raw) return null;
 
-return n;
-}
+      const bag = JSON.parse(raw);
+      if (!Array.isArray(bag) || bag.length === 0) return null;
 
-const n=pick();
+      const validBag = bag.filter(n => numbers.includes(n));
+      return validBag.length ? validBag : null;
+    } catch {
+      return null;
+    }
+  }
 
-if(n){
-location.replace("https://wa.me/"+n);
-}
+  function pick() {
+    if (!numbers.length) return "";
 
+    let bag = loadBag();
+    const last = getStorageItem(KEY_LAST) || "";
+
+    if (!bag || bag.length === 0) {
+      bag = shuffle(numbers);
+
+      if (bag.length > 1 && bag[0] === last) {
+        [bag[0], bag[1]] = [bag[1], bag[0]];
+      }
+    }
+
+    const current = bag.shift();
+
+    setStorageItem(KEY_BAG, JSON.stringify(bag));
+    setStorageItem(KEY_LAST, current);
+
+    return current;
+  }
+
+  const n = pick();
+
+  if (n) {
+    window.location.replace("https://wa.me/" + n);
+  } else {
+    document.body.style.display = "block";
+    document.body.textContent = "No valid WhatsApp number found.";
+  }
 })();
 </script>
 
-</head>
-<body></body>
+</body>
 </html>
